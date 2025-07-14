@@ -328,6 +328,8 @@ if __name__ == "__main__":
     # exit()
     # Discord webhook URL
     DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1386583844475375726/6A6cjiaYkbgXHxmQ38muWvKJ4qJqt02HPDsNa92S5BTh_flHN83HMf1IRTDPLXtPYDmZ'
+    # pro
+    DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1388056531026841620/9xVZst5BI3tTNfhTBpGrrPm8EyeYgeAI2ZQuE8yrd-OHnbJmTgHLSAhI0yDoX3O35RnO'
     
     # 导入MQTT配置
     from emqx import MQTTConfig, MQTTClient
