@@ -161,31 +161,85 @@ function sendOptionsDataToMQTT(optionsData) {
 
 // 美东时间转换和判断函数
 
-// 更精确的美东时间处理函数（考虑夏令时）
+// 更精确的美东时间处理函数（考虑夏令时和AM/PM）
 function isWithin10MinutesEST(estTimeString) {
   try {
-    // 获取当前时间
+    console.log(`检查时间: ${estTimeString}`);
+    
+    // 解析时间字符串
+    let hours, minutes, seconds = 0;
+    const timeMatch = estTimeString.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (timeMatch) {
+      hours = parseInt(timeMatch[1]);
+      minutes = parseInt(timeMatch[2]);
+      seconds = timeMatch[3] ? parseInt(timeMatch[3]) : 0;
+    } else {
+      console.error('无法解析时间格式:', estTimeString);
+      return false;
+    }
+    
+    // 获取当前EST时间
     const now = new Date();
+    const nowEST = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     
-    // 解析时间字符串 "4:14:49"
-    const [hours, minutes, seconds] = estTimeString.split(':').map(Number);
+    // 获取EST当天的日期
+    const estYear = nowEST.getFullYear();
+    const estMonth = nowEST.getMonth();
+    const estDate = nowEST.getDate();
     
-    // 拼上当前日期，创建完整的时间对象
-    const targetTime = new Date();
-    targetTime.setHours(hours, minutes, seconds, 0);
+    // 构造目标时间的两个可能版本（AM和PM）
+    const targetAM = new Date(estYear, estMonth, estDate, hours, minutes, seconds);
+    const targetPM = new Date(estYear, estMonth, estDate, hours + 12, minutes, seconds);
     
-    // 计算时间差（毫秒）
-    const timeDiff = Math.abs(now.getTime() - targetTime.getTime());
-    const tenMinutesInMs = 10 * 60 * 1000; // 10分钟的毫秒数
+    // 计算时间差
+    const diffAM = Math.abs(nowEST.getTime() - targetAM.getTime());
+    const diffPM = Math.abs(nowEST.getTime() - targetPM.getTime());
     
-    // 判断是否在10分钟之内
-    const isWithin10Min = timeDiff >= 0 && timeDiff <= tenMinutesInMs;
+    // 选择时间差更小的那个
+    const minDiff = Math.min(diffAM, diffPM);
+    const tenMinutesInMs = 10 * 60 * 1000;
+    
+    const isWithin10Min = minDiff <= tenMinutesInMs;
+    
+    const chosenTarget = diffAM < diffPM ? targetAM : targetPM;
+    const chosenPeriod = diffAM < diffPM ? 'AM' : 'PM';
+    
+    console.log(`当前EST时间: ${nowEST.toLocaleString()}`);
+    console.log(`目标时间${chosenPeriod}: ${chosenTarget.toLocaleString()}`);
+    console.log(`时间差: ${Math.round(minDiff/1000/60)}分钟, 是否在10分钟内: ${isWithin10Min}`);
     
     return isWithin10Min;
   } catch (error) {
     console.error('时间转换错误:', error);
     return false;
   }
+}
+
+// 测试时间判断函数
+function testTimeFunction() {
+  console.log('=== 测试时间判断函数 ===');
+  
+  const now = new Date();
+  const nowEST = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+  
+  console.log(`当前本地时间: ${now.toLocaleString()}`);
+  console.log(`当前EST时间: ${nowEST.toLocaleString()}`);
+  
+  // 测试用例
+  const testCases = [
+    nowEST.getHours() + ':' + String(nowEST.getMinutes()).padStart(2, '0'),  // 当前时间
+    (nowEST.getHours()) + ':' + String(nowEST.getMinutes() + 5).padStart(2, '0'),  // 5分钟后
+    (nowEST.getHours()) + ':' + String(nowEST.getMinutes() - 5).padStart(2, '0'),  // 5分钟前
+    (nowEST.getHours()) + ':' + String(nowEST.getMinutes() + 15).padStart(2, '0'), // 15分钟后
+    '10:16',  // 固定时间测试
+    '22:16',  // 固定时间测试（24小时制）
+  ];
+  
+  testCases.forEach(testTime => {
+    console.log(`\n测试时间: ${testTime}`);
+    const result = isWithin10MinutesEST(testTime);
+    console.log(`结果: ${result}\n`);
+  });
 }
 
 // 创建开始/暂停按钮
@@ -198,6 +252,7 @@ function createControlButton() {
   const button = document.createElement('button');
   button.id = 'blackbox-monitor-btn';
   button.textContent = '开始监听';
+  button.title = '点击切换监听状态\nShift+点击测试时间函数';
   button.style.cssText = `
     position: fixed;
     bottom: 20px;
@@ -215,11 +270,15 @@ function createControlButton() {
   `;
 
   // button.addEventListener('click', toggleMonitoring);
-  button.addEventListener('click', () => {
-    // domToImg(document.querySelector('#optionStrip .k-master-row'));
-    // testParseOptionsRow(); // 测试解析函数
-    toggleMonitoring()
-
+  button.addEventListener('click', (e) => {
+    // 如果按住Shift键，运行测试函数
+    if (e.shiftKey) {
+      testTimeFunction();
+      return;
+    }
+    
+    // 正常点击切换监听
+    toggleMonitoring();
   });
   document.body.appendChild(button);
 }
