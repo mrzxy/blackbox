@@ -299,6 +299,7 @@ async function processOptions() {
     }
 
     if (!isWithin10MinutesEST(row.querySelector('td.time').innerText)) {
+      console.log("not in 10 minutes")
       continue;
     }
 
@@ -309,11 +310,12 @@ async function processOptions() {
       
       if (optionsData.length > 0) {
         // 发送解析后的数据到MQTT
-        publishMsg('lis-msg/black_box', {
+        let pub_result = publishMsg('lis-msg/black_box', {
           "data": optionsData,
           "timestamp": Date.now(),
           "source": "blackbox_options_monitor"
         });
+        console.log("pub_result", pub_result)
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         console.log('已发送期权数据到MQTT:', optionsData);
