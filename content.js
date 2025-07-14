@@ -262,6 +262,7 @@ function startMonitoring() {
 
 // while循环监听函数
 async function startWhileLoop() {
+  console.log("isMonitoring", isMonitoring)
   while (isMonitoring) {
     try {
       await processOptions();
