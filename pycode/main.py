@@ -5,6 +5,8 @@ import re
 import requests
 import json
 import io
+import platform
+import os
 
 def send_image_to_discord(image, webhook_url, message="", filename="options_image.png"):
     """
@@ -135,23 +137,84 @@ def create_options_image(text_content, width=1200, height=70, bg_color="#000000"
     base_font_size = 28
     hq_font_size = base_font_size * scale_factor
     
-    try:
-        # 尝试使用系统粗体字体
-        font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", hq_font_size)
-    except:
-        try:
-            # 尝试使用 Arial Bold
-            font = ImageFont.truetype("/System/Library/Fonts/Arial Bold.ttf", hq_font_size)
-        except:
+    # 根据操作系统选择字体路径
+    system = platform.system()
+    font = None
+    
+    if system == "Windows":
+        # Windows 字体路径
+        windows_fonts = [
+            "C:/Windows/Fonts/arialbd.ttf",      # Arial Bold
+            "C:/Windows/Fonts/arial.ttf",       # Arial
+            "C:/Windows/Fonts/calibrib.ttf",    # Calibri Bold
+            "C:/Windows/Fonts/calibri.ttf",     # Calibri
+            "C:/Windows/Fonts/verdanab.ttf",    # Verdana Bold
+            "C:/Windows/Fonts/verdana.ttf",     # Verdana
+            "C:/Windows/Fonts/times.ttf",       # Times New Roman
+        ]
+        
+        for font_path in windows_fonts:
             try:
-                # 尝试使用默认粗体字体
-                font = ImageFont.truetype("/System/Library/Fonts/ArialMT.ttc", hq_font_size)
-            except:
-                # 最后的备选方案，尝试调整默认字体大小
-                try:
-                    font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", hq_font_size // 2)
-                except:
-                    font = ImageFont.load_default()
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, hq_font_size)
+                    print(f"✅ 使用Windows字体: {font_path}")
+                    break
+            except Exception as e:
+                print(f"尝试加载字体失败: {font_path} - {e}")
+                continue
+                
+    elif system == "Darwin":  # macOS
+        # macOS 字体路径
+        macos_fonts = [
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/System/Library/Fonts/Arial Bold.ttf", 
+            "/System/Library/Fonts/ArialMT.ttc",
+            "/System/Library/Fonts/Verdana Bold.ttf",
+            "/System/Library/Fonts/Verdana.ttf",
+            "/Library/Fonts/Arial.ttf",
+        ]
+        
+        for font_path in macos_fonts:
+            try:
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, hq_font_size)
+                    print(f"✅ 使用macOS字体: {font_path}")
+                    break
+            except Exception as e:
+                print(f"尝试加载字体失败: {font_path} - {e}")
+                continue
+                
+    elif system == "Linux":
+        # Linux 字体路径
+        linux_fonts = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/TTF/arial.ttf",
+            "/usr/share/fonts/TTF/arialbd.ttf",
+        ]
+        
+        for font_path in linux_fonts:
+            try:
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, hq_font_size)
+                    print(f"✅ 使用Linux字体: {font_path}")
+                    break
+            except Exception as e:
+                print(f"尝试加载字体失败: {font_path} - {e}")
+                continue
+    
+    # 如果所有系统字体都加载失败，使用默认字体
+    if font is None:
+        try:
+            # 尝试使用PIL的默认字体
+            font = ImageFont.load_default()
+            print(f"⚠️ 使用默认字体，字体大小可能不是最优")
+        except:
+            # 最后的备选方案
+            font = ImageFont.load_default()
+            print(f"❌ 字体加载失败，使用系统默认字体")
     
     # 计算每个文本段的宽度
     segment_widths = []
