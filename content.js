@@ -252,7 +252,7 @@ function startMonitoring() {
   // 将当前列表的所有选项行标记为已处理
   const currentOptionRows = document.querySelectorAll('#optionStrip .k-master-row');
   currentOptionRows.forEach(row => {
-    // row.setAttribute('data-issend', '1');
+    row.setAttribute('data-issend', '1');
   });
   console.log(`已标记 ${currentOptionRows.length} 个当前选项行为已处理`);
   
@@ -297,9 +297,9 @@ async function processOptions() {
       continue;
     }
 
-    // if (!isWithin10MinutesEST(row.querySelector('td.time').innerText)) {
-    //   continue;
-    // }
+    if (!isWithin10MinutesEST(row.querySelector('td.time').innerText)) {
+      continue;
+    }
 
     try {
       // 解析期权数据
