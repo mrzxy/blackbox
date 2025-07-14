@@ -313,6 +313,7 @@ async function processOptions() {
           "timestamp": Date.now(),
           "source": "blackbox_options_monitor"
         });
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         console.log('已发送期权数据到MQTT:', optionsData);
         
