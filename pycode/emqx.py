@@ -106,7 +106,7 @@ class MQTTClient:
             if self.config.auto_reconnect:
                 self._start_reconnect()
     
-    def _on_disconnect(self, client, userdata, rc, properties=None):
+    def _on_disconnect(self, client, userdata, rc, *args):
         """断开连接回调"""
         if rc != 0:
             self.state = ConnectionState.DISCONNECTED
