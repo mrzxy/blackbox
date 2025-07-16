@@ -11,7 +11,9 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-debug = False
+debug = True
+
+proxy_url = "http://6D07C532:B3C7FC8B3310@tunpool-pczn8.qg.net:19835"
 
 def get_posts(ts):
   url = f"https://stockmarketmentor.com/forum/api/services/PostsDAO.php?site=smm&params=[%22posts%22,%22all%22,null,%22conversation%22,{ts}]"
@@ -25,10 +27,11 @@ def get_posts(ts):
     'Cookie': 'PHPSESSID=t2ohrs60r7ifte17cp9lis838g'
   }
 
-  response = requests.request("GET", url, headers=headers, data=payload)
+  response = requests.request("GET", url, headers=headers, data=payload, proxies={"http": proxy_url, "https": proxy_url})
   if response.status_code == 200:
     return response.json()
   else:
+    log.info(f"❌ 请求失败: {response.status_code} {response.text}")    
     return None
 
 def on_connect(client, userdata, flags, rc):
