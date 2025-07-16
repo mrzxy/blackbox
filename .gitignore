@@ -1,2 +1,3 @@
-pycode/__pycache__
-pycode/emqxsl-ca.crt
+*/__pycache__
+*/emqxsl-ca.crt
+*/.DS_Store
