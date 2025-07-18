@@ -2,6 +2,7 @@ import requests
 import time
 import json
 import logging
+import re
 
 # 配置日志
 logging.basicConfig(
@@ -11,7 +12,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-debug = True
+debug = False
 
 proxy_url = "http://6D07C532:B3C7FC8B3310@tunpool-pczn8.qg.net:19835"
 
@@ -108,7 +109,7 @@ def process_posts(client, posts):
 
 def send_post_to_mqtt(client, post):
     """发送post到MQTT"""
-    author = post.get('author', '')
+    author = post.get('author', '').trim()
     if debug:
       mapping = {
         "topic": "lis-msg/qiyu",
@@ -129,9 +130,8 @@ def send_post_to_mqtt(client, post):
     # 替换特殊字符
     content = content.replace('~', '').replace('#', '')
     
-    # 去除开头的@用户名
-    if content.startswith('@'):
-        content = content.split(' ', 1)[1] if ' ' in content else ''
+    # 去除所有@用户名（如@abc @joelsg1等）
+    content = re.sub(r'@\w+\s*', '', content).strip()
 
     # 构造消息数据
     message_data = {
@@ -193,6 +193,7 @@ def listen(client):
 
 
 if __name__ == "__main__":
+
     from emqx import MQTTConfig, MQTTClient
     
     log.info("🚀 启动Posts监听服务...")
