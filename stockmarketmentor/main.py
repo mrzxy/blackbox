@@ -109,7 +109,7 @@ def process_posts(client, posts):
 
 def send_post_to_mqtt(client, post):
     """发送post到MQTT"""
-    author = post.get('author', '').trim()
+    author = post.get('author', '').strip()
     if debug:
       mapping = {
         "topic": "lis-msg/qiyu",
