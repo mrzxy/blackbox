@@ -28,7 +28,7 @@ case "$1" in
         fi
 
         # 启动Python程序并记录PID
-        nohup python main.py >> "$LOG_FILE" 2>&1 &
+        nohup python -X utf8 main.py >> "$LOG_FILE" 2>&1 &
         echo $! > python_pid.txt
         echo "Python程序已启动 (PID: $!), 日志输出到: $LOG_FILE"
         ;;
