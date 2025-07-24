@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 debug = False
 
-proxy_url = "http://6D07C532:B3C7FC8B3310@tunpool-pczn8.qg.net:19835"
+proxy_url = "http://D0BFA2CA:809AD5BFCDCB@tunpool-yu7bw.qg.net:11639"
 
 def get_posts(ts):
   url = f"https://stockmarketmentor.com/forum/api/services/PostsDAO.php?site=smm&params=[%22posts%22,%22all%22,null,%22conversation%22,{ts}]"
