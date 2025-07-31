@@ -141,7 +141,7 @@ function normalizeColor(color) {
  * 发送期权数据到MQTT
  * @param {Array} optionsData - 期权数据数组
  */
-async function sendOptionsDataToMQTT(optionsData) {
+function sendOptionsDataToMQTT(optionsData) {
     try {
         const message = {
             data: optionsData,
@@ -152,7 +152,7 @@ async function sendOptionsDataToMQTT(optionsData) {
         console.log('准备发送MQTT消息:', message);
         
         // 使用已有的publishMsg函数发送到MQTT
-        await publishMsg('lis-msg/black_box', JSON.stringify(message));
+        publishMsg('lis-msg/black_box', JSON.stringify(message));
         
     } catch (error) {
         console.error('发送MQTT消息时出错:', error);
@@ -335,43 +335,14 @@ async function startWhileLoop() {
   }
 }
 
-// 定期连接状态检查
-let connectionCheckInterval = null;
-
-function startConnectionCheck() {
-  // 清除之前的定时器
-  if (connectionCheckInterval) {
-    clearInterval(connectionCheckInterval);
-  }
-  
-  // 每30秒检查一次连接状态
-  connectionCheckInterval = setInterval(() => {
-    if (isMonitoring) {
-      checkAndReconnectMqtt();
-    }
-  }, 30000); // 30秒检查一次
-  
-  console.log('🔍 启动MQTT连接状态定期检查');
-}
-
 // 停止监听
 function stopMonitoring() {
   isMonitoring = false;
   console.log('停止监听 BlackBox Options');
-  
-  // 清除连接检查定时器
-  if (connectionCheckInterval) {
-    clearInterval(connectionCheckInterval);
-    connectionCheckInterval = null;
-    console.log('🔍 停止MQTT连接状态检查');
-  }
 }
 
 // 处理选项数据
 async function processOptions() {
-  // 检查MQTT连接状态
-  checkAndReconnectMqtt()
-  
   const optionRows = document.querySelectorAll('#optionStrip .k-master-row');
   
   // 倒序循环处理选项行
@@ -595,7 +566,6 @@ function getRandomNum() {
 function connectMqtt() {
     const url = 'wss://f24a5dcf.ala.cn-hangzhou.emqxsl.cn:8084/mqtt'
     let role = "t3_listener"
-    
     // Create an MQTT client instance
     const options = {
         // Clean session
@@ -605,101 +575,35 @@ function connectMqtt() {
         clientId: role + '_' + getRandomNum(),
         username: 'dcaccount',
         password: 'f24a5dcf123',
-        // 重连配置
-        reconnectPeriod: 5000,  // 重连间隔5秒
-        connectTimeout: 4000,   // 连接超时4秒
-        keepalive: 60,         // 保活时间60秒
+                // 重连配置
+                reconnectPeriod: 5000,  // 重连间隔5秒
+                connectTimeout: 4000,   // 连接超时4秒
+                keepalive: 60,         // 保活时间60秒
     }
-    
     const client = mqtt.connect(url, options)
-    
-    // 连接成功回调
     client.on('connect', function () {
-        console.log(`✅ MQTT连接成功: ${client.username}`)
+        console.log(`${client.username} connected!`)
     })
-    
-    // 连接断开回调
-    client.on('disconnect', function () {
-        console.log('🔌 MQTT连接断开')
-    })
-    
-    // 重连回调
-    client.on('reconnect', function () {
-        console.log('🔄 MQTT正在重连...')
-    })
-    
-    // 错误回调
-    client.on('error', function (error) {
-        console.error('❌ MQTT连接错误:', error)
-    })
-    
-    // 离线回调
-    client.on('offline', function () {
-        console.log('📴 MQTT客户端离线')
-    })
+
 
     return client
 }
 
 let client = connectMqtt()
 
-// 连接状态检查函数
-function checkAndReconnectMqtt() {
-    if (!client.connected) {
-        console.log("🔌 检测到MQTT连接断开，尝试重新连接...")
-        client.reconnect()
-        
-        // 等待连接建立（最多等待3秒）
-        let waitCount = 0
-        const checkConnection = () => {
-            if (client.connected) {
-                console.log("✅ MQTT重连成功")
-                return
+function publishMsg(topic, content) {
+    if (client.connected) {
+        return client.publish(topic, JSON.stringify(content), {
+            qos: 1,
+        }, (err) => {
+            if (err) {
+                console.error(error)
             }
-            if (waitCount < 30) {
-                waitCount++
-                setTimeout(checkConnection, 100)
-            } else {
-                console.error("❌ MQTT重连超时")
-            }
-        }
-        checkConnection()
+        })
+    } else {
+        console.log("mqtt not connected")
     }
-}
-
-async function publishMsg(topic, content) {
-    // 检查连接状态，如果未连接则尝试重连
-    if (!client.connected) {
-        console.log("🔌 MQTT未连接，尝试重新连接...")
-        
-        // 尝试重新连接
-        client.reconnect()
-        
-        // 等待连接建立（最多等待3秒）
-        let waitCount = 0
-        while (!client.connected && waitCount < 30) {
-            await new Promise(resolve => setTimeout(resolve, 100))
-            waitCount++
-        }
-        
-        if (!client.connected) {
-            console.error("❌ MQTT重连失败，跳过消息发送")
-            return false
-        }
-        
-        console.log("✅ MQTT重连成功")
-    }
-    
-    // 发送消息
-    return client.publish(topic, JSON.stringify(content), {
-        qos: 1,
-    }, (err) => {
-        if (err) {
-            console.error("❌ MQTT消息发送失败:", err)
-        } else {
-            console.log("✅ MQTT消息发送成功")
-        }
-    })
+    return false
 }
 // 启动插件
 init(); 
