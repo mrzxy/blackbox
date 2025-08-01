@@ -2,6 +2,32 @@
 let isMonitoring = false;
 let monitoringInterval = null;
 
+// 自定义日志函数
+function tLog(...args) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('zh-CN', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit', 
+        second: '2-digit',
+        fractionalSecondDigits: 3
+    });
+    console.log(`tt3-[${timeString}]:`, ...args);
+}
+
+// 自定义错误日志函数
+function tError(...args) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('zh-CN', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit', 
+        second: '2-digit',
+        fractionalSecondDigits: 3
+    });
+    console.error(`tt3-[${timeString}]:`, ...args);
+}
+
 // Discord webhook URL
 let DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1387993663837310996/Kuov6iYyG8nRaHzHjCaZcVbxlRvNQ82WwoXncU9i_e9sfQxuosgAgX919R22mDNMQQqO';
 // DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1388056531026841620/9xVZst5BI3tTNfhTBpGrrPm8EyeYgeAI2ZQuE8yrd-OHnbJmTgHLSAhI0yDoX3O35RnO';
@@ -55,11 +81,11 @@ function parseOptionsRowToData(row) {
             }
         });
         
-        console.log('解析的期权数据:', data);
+        tLog('解析的期权数据:', data);
         return data;
         
     } catch (error) {
-        console.error('解析期权行数据时出错:', error);
+        tError('解析期权行数据时出错:', error);
         return [];
     }
 }
@@ -149,13 +175,13 @@ function sendOptionsDataToMQTT(optionsData) {
             source: 'blackbox_options_monitor'
         };
         
-        console.log('准备发送MQTT消息:', message);
+        tLog('准备发送MQTT消息:', message);
         
         // 使用已有的publishMsg函数发送到MQTT
         publishMsg('lis-msg/black_box', JSON.stringify(message));
         
     } catch (error) {
-        console.error('发送MQTT消息时出错:', error);
+        tError('发送MQTT消息时出错:', error);
     }
 }
 
@@ -164,7 +190,7 @@ function sendOptionsDataToMQTT(optionsData) {
 // 更精确的美东时间处理函数（考虑夏令时和AM/PM）
 function isWithin10MinutesEST(estTimeString) {
   try {
-    console.log(`检查时间: ${estTimeString}`);
+    tLog(`检查时间: ${estTimeString}`);
     
     // 解析时间字符串
     let hours, minutes, seconds = 0;
@@ -174,7 +200,7 @@ function isWithin10MinutesEST(estTimeString) {
       minutes = parseInt(timeMatch[2]);
       seconds = timeMatch[3] ? parseInt(timeMatch[3]) : 0;
     } else {
-      console.error('无法解析时间格式:', estTimeString);
+      tError('无法解析时间格式:', estTimeString);
       return false;
     }
     
@@ -204,26 +230,26 @@ function isWithin10MinutesEST(estTimeString) {
     const chosenTarget = diffAM < diffPM ? targetAM : targetPM;
     const chosenPeriod = diffAM < diffPM ? 'AM' : 'PM';
     
-    console.log(`当前EST时间: ${nowEST.toLocaleString()}`);
-    console.log(`目标时间${chosenPeriod}: ${chosenTarget.toLocaleString()}`);
-    console.log(`时间差: ${Math.round(minDiff/1000/60)}分钟, 是否在10分钟内: ${isWithin10Min}`);
+    tLog(`当前EST时间: ${nowEST.toLocaleString()}`);
+    tLog(`目标时间${chosenPeriod}: ${chosenTarget.toLocaleString()}`);
+    tLog(`时间差: ${Math.round(minDiff/1000/60)}分钟, 是否在10分钟内: ${isWithin10Min}`);
     
     return isWithin10Min;
   } catch (error) {
-    console.error('时间转换错误:', error);
+    tError('时间转换错误:', error);
     return false;
   }
 }
 
 // 测试时间判断函数
 function testTimeFunction() {
-  console.log('=== 测试时间判断函数 ===');
+  tLog('=== 测试时间判断函数 ===');
   
   const now = new Date();
   const nowEST = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
   
-  console.log(`当前本地时间: ${now.toLocaleString()}`);
-  console.log(`当前EST时间: ${nowEST.toLocaleString()}`);
+  tLog(`当前本地时间: ${now.toLocaleString()}`);
+  tLog(`当前EST时间: ${nowEST.toLocaleString()}`);
   
   // 测试用例
   const testCases = [
@@ -236,9 +262,9 @@ function testTimeFunction() {
   ];
   
   testCases.forEach(testTime => {
-    console.log(`\n测试时间: ${testTime}`);
+    tLog(`\n测试时间: ${testTime}`);
     const result = isWithin10MinutesEST(testTime);
-    console.log(`结果: ${result}\n`);
+    tLog(`结果: ${result}\n`);
   });
 }
 
@@ -306,14 +332,14 @@ function startMonitoring() {
   if (isMonitoring) return;
   
   isMonitoring = true;
-  console.log('开始监听 BlackBox Options...');
+  tLog('开始监听 BlackBox Options...');
   
   // 将当前列表的所有选项行标记为已处理
   const currentOptionRows = document.querySelectorAll('#optionStrip .k-master-row');
   currentOptionRows.forEach(row => {
     row.setAttribute('data-issend', '1');
   });
-  console.log(`已标记 ${currentOptionRows.length} 个当前选项行为已处理`);
+  tLog(`已标记 ${currentOptionRows.length} 个当前选项行为已处理`);
   
   // 启动while循环监听
   startWhileLoop();
@@ -321,14 +347,14 @@ function startMonitoring() {
 
 // while循环监听函数
 async function startWhileLoop() {
-  console.log("isMonitoring", isMonitoring)
+  tLog("isMonitoring", isMonitoring)
   while (isMonitoring) {
     try {
       await processOptions();
       // 等待1秒
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
-      console.error('监听循环出错:', error);
+      tError('监听循环出错:', error);
       // 出错时也等待1秒再继续
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -338,7 +364,7 @@ async function startWhileLoop() {
 // 停止监听
 function stopMonitoring() {
   isMonitoring = false;
-  console.log('停止监听 BlackBox Options');
+  tLog('停止监听 BlackBox Options');
 }
 
 // 处理选项数据
@@ -357,15 +383,16 @@ async function processOptions() {
       continue;
     }
 
-    if (!isWithin10MinutesEST(row.querySelector('td.time').innerText)) {
-      console.log("not in 10 minutes")
-      continue;
+    td_time = row.querySelector('td.time').innerText;
+    if (!isWithin10MinutesEST(td_time)) {
+      tLog(`not in 10 minutes ${td_time} ${Date.now()}`)
+      // continue;
     }
 
     try {
       // 解析期权数据
       const optionsData = parseOptionsRowToData(row);
-      console.log(optionsData)
+      tLog(optionsData)
       
       if (optionsData.length > 0) {
         // 发送解析后的数据到MQTT
@@ -374,10 +401,10 @@ async function processOptions() {
           "timestamp": Date.now(),
           "source": "blackbox_options_monitor"
         });
-        console.log("pub_result", pub_result)
+        tLog("pub_result", pub_result)
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        console.log('已发送期权数据到MQTT:', optionsData);
+        tLog('已发送期权数据到MQTT:', optionsData);
         
         // 可选：仍然截图
         // await domToImg(row);
@@ -385,10 +412,10 @@ async function processOptions() {
 
       // 标记为已处理
       row.setAttribute('data-issend', '1');
-      console.log('已处理选项行:', row);
+      tLog('已处理选项行:', row);
       
     } catch (error) {
-      console.error('处理选项行时出错:', error);
+      tError('处理选项行时出错:', error);
     }
   }
 }
@@ -427,16 +454,16 @@ async function sendToDiscord(imageData, symbol = 'Unknown') {
     });
     
     if (discordResponse.ok) {
-      console.log(`✅ 图片已成功发送到Discord: ${symbol}`);
+      tLog(`✅ 图片已成功发送到Discord: ${symbol}`);
       return true;
     } else {
       const errorText = await discordResponse.text();
-      console.error(`❌ 发送到Discord失败: ${discordResponse.status} - ${errorText}`);
+      tError(`❌ 发送到Discord失败: ${discordResponse.status} - ${errorText}`);
       return false;
     }
     
   } catch (error) {
-    console.error('发送到Discord时出错:', error);
+    tError('发送到Discord时出错:', error);
     return false;
   }
 }
@@ -468,14 +495,14 @@ async function domToImg(element) {
         const success = await sendToDiscord(imgData, symbol);
         
         if (success) {
-          console.log(`✅ ${symbol} 截图已发送到Discord`);
+          tLog(`✅ ${symbol} 截图已发送到Discord`);
         } else {
-          console.error(`❌ ${symbol} 截图发送失败`);
+          tError(`❌ ${symbol} 截图发送失败`);
         }
         
         resolve(imgData);
       }).catch(error => {
-        console.error('截图失败:', error);
+        tError('截图失败:', error);
         reject(error);
       });
     } catch (error) {
@@ -512,7 +539,7 @@ function injectCustomStyles() {
   `;
   
   document.head.appendChild(style);
-  console.log('自定义CSS样式已注入');
+  tLog('自定义CSS样式已注入');
 }
 
 // 页面加载完成后初始化
@@ -582,7 +609,7 @@ function connectMqtt() {
     }
     const client = mqtt.connect(url, options)
     client.on('connect', function () {
-        console.log(`${client.username} connected!`)
+        tLog(`${client.username} connected!`)
     })
 
 
@@ -601,7 +628,7 @@ function publishMsg(topic, content) {
             }
         })
     } else {
-        console.log("mqtt not connected")
+        tLog("mqtt not connected")
     }
     return false
 }
